@@ -46,7 +46,7 @@ export default class Splashscreen extends Component<{}> {
             let userId = data[2][1];
             if(email!=null){
                 firebase.auth().signInWithEmailAndPassword(email,password).then(() => {
-                    Actions.income();
+                    Actions.outcome();
                 }).catch((Error) => {
                     alert(Error.toString());
                 });

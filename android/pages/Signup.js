@@ -63,14 +63,14 @@ export default class Signup extends Component<{}> {
     }
     writeToDatabase = (userId) => {
         let today = new Date();
-        let Times = today.getDate() + " " + this.Months(today.getMonth()) + " " + today.getFullYear() +
-            "\n" + today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds()
-        ;
+        let Dates = today.getDate() + " " + this.Months(today.getMonth()) + " " + today.getFullYear();
+        let Time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
         let sortTime = -1*today.getTime();
         var database = firebase.database().ref("Users").child(userId);
         database.set({
             sortTime : sortTime,
-            createdAt : Times,
+            DateCreated : Dates,
+            TimeCreated : Time,
             userId : userId,
             email : this.state.email,
             fullname : this.state.fullname,

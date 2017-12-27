@@ -3,6 +3,7 @@ import {
     View,
     Text,
     TouchableHighlight,
+    TouchableOpacity,
     StyleSheet,
     ListView,
     AppRegistry,
@@ -22,13 +23,8 @@ import {
     responsiveWidth,
     responsiveFontSize
 } from 'react-native-responsive-dimensions';
-import {
-    Drawer
-} from 'react-native-drawer';
-import drawerContent from '../components/drawerContent';
 import { Actions } from 'react-native-router-flux';
-
-
+import DatePicker from 'react-native-datepicker';
 
 export default class outcomePage extends Component <{}> {
     constructor() {
@@ -50,11 +46,16 @@ export default class outcomePage extends Component <{}> {
             userID : uid,
             itemDataSource : ds,
             modalVisible : false,
-            language : '',
+            modalVisible2 : false,
+            type : 'Food',
             text1 : '',
             text2 : '',
             text3 : '',
-            balance : 0
+            text2_old : '',
+            text3_old : '',
+            balance : 0,
+            date : this.getTimes(),
+            itemKey : ''
         }
         this.itemsRef = this.getRef().child('Items');
         this.renderRow = this.renderRow.bind(this);
@@ -74,7 +75,10 @@ export default class outcomePage extends Component <{}> {
         this.clearModal;
         this.setState({modalVisible : visible});
     }
-
+    setModalVisible2(visible) {
+        this.clearModal;
+        this.setState({modalVisible2 : visible});
+    }
     getRef() {
         return firebase.database().ref('Users/'+this.state.userID);
     }
@@ -92,12 +96,14 @@ export default class outcomePage extends Component <{}> {
         itemsRef.on('value',(snap) => {
             let items = [];
             snap.forEach((child) => {
-                items.push({
-                    title : child.val().Stuff,
-                    price : child.val().Price,
-                    count : child.val().Count,
-                    _key : child.key
-                });
+                if(child.val().Time == this.state.date) {
+                    items.push({
+                        title : child.val().Stuff,
+                        price : child.val().Price,
+                        count : child.val().Count,
+                        _key : child.key
+                    });
+                }
             });
             this.setState({
                 itemDataSource : this.state.itemDataSource.cloneWithRows(items)
@@ -127,32 +133,36 @@ export default class outcomePage extends Component <{}> {
         );
     }
     pressRow(item) {
-        var x,y,z;
+        this.setState({itemKey : item._key});
         this.itemsRef.child(item._key).on('value', (snap) => {
-            x = snap.val() && snap.val().Price;
-            y = snap.val() && snap.val().Count;
-            z = x * y;
+            this.setState({
+                text1 : snap.val() && snap.val().Stuff,
+                text2 : snap.val() && snap.val().Price.toString(),
+                text3 : snap.val() && snap.val().Count.toString(),
+                text2_old : snap.val() && snap.val().Price,
+                text3_old : snap.val() && snap.val().Count,
+                type : snap.val() && snap.val().Type
+            });
         });
-        z = this.state.balance + z;
-        var balanceKey = this.getRef().child('Balance').key;
-        this.getRef().child('Balance').update({
-            value : z
-        });
-        this.itemsRef.child(item._key).remove();
+        this.setModalVisible2(true);
     }
 
     addItem() {
         this.setModalVisible(true);
     }
-
-    closeControlPanel (){
-        this._drawer.close()
-    }
-    openControlPanel (){
-        this._drawer.open()
-    }
     Income() {
         Actions.income();
+    }
+    Profile() {
+        Actions.profile();
+    }
+    Chart() {
+        Actions.chart();
+    }
+    getTimes() {
+        let today = new Date();
+        var time = today.getDate() + "/" + (today.getMonth()+1) + "/" + today.getFullYear();
+        return time;
     }
     render() {
         return(
@@ -179,8 +189,8 @@ export default class outcomePage extends Component <{}> {
                             style={styles.modal}
                         >
                             <Picker
-                                selectedValue={this.state.language}
-                                onValueChange={(itemValue, itemIndex) => this.setState({language: itemValue})}
+                                selectedValue={this.state.type}
+                                onValueChange={(itemValue, itemIndex) => this.setState({type: itemValue})}
                                 style={{
                                     backgroundColor : 'transparent',
                                     borderWidth : responsiveWidth(3),
@@ -233,7 +243,8 @@ export default class outcomePage extends Component <{}> {
                                                 Stuff : this.state.text1, 
                                                 Price : parseInt(this.state.text2), 
                                                 Count : parseInt(this.state.text3),
-                                                Type : this.state.language
+                                                Type : this.state.type,
+                                                Time : this.getTimes()
                                             })
                                             let x = this.state.balance - (parseInt(this.state.text2)*parseInt(this.state.text3))
                                             var balanceKey = this.getRef().child('Balance').key
@@ -244,7 +255,12 @@ export default class outcomePage extends Component <{}> {
                                         } else {
                                             alert("Error : Incomplete text field.\nPlease fill all the textfield before enter.")
                                         }
-                                        this.setState({text1 : "", text2 : "", text3 : ""})
+                                        this.setState({
+                                            text1 : "", 
+                                            text2 : "", 
+                                            text3 : "",
+                                            type : "Food"
+                                        })
                                     }}
                                     style = {styles.modalButton1}
                                 >
@@ -253,6 +269,12 @@ export default class outcomePage extends Component <{}> {
                                 <TouchableHighlight
                                     onPress={() => {
                                         this.setModalVisible(!this.state.modalVisible)
+                                        this.setState({
+                                            text1 : "", 
+                                            text2 : "", 
+                                            text3 : "",
+                                            type : "Food"
+                                        })
                                     }}
                                     style = {styles.modalButton2}
                                 >
@@ -262,21 +284,200 @@ export default class outcomePage extends Component <{}> {
                         </View>
                     </View>
                 </Modal>
-                <TouchableHighlight
-                    style = {styles.headerTab}
-                    onPress = {this.Income}
+
+
+
+                <Modal
+                    animationType={"slide"}
+                    transparent={true}
+                    visible={this.state.modalVisible2}
+                    onRequestClose={() => {}}
                 >
-                    <Text style={styles.header}>This is Outcome Page</Text>
-                    {/* <TouchableHighlight
+                    <View
                         style = {{
-                            height : responsiveHeight(2),
-                            width : responsiveWidth(10)
+                            alignItems : 'center',
+                            backgroundColor : '#fff',
+                            borderWidth : 3,
+                            borderRadius : 10,
+                            marginTop : responsiveHeight(8),
+                            width : responsiveWidth(80),
+                            marginHorizontal : responsiveWidth(10)
                         }}
-                        onPress = {() => this.openControlPanel()}
                     >
-                        <Text>open</Text>
-                    </TouchableHighlight> */}
-                </TouchableHighlight>
+                        <View
+                            style={styles.modal}
+                        >
+                            <Text
+                                style={{fontSize : responsiveFontSize(2), alignSelf : 'center'}}
+                            >
+                                Edit or Delete
+                            </Text>
+                            <Picker
+                                selectedValue={this.state.type}
+                                onValueChange={(itemValue, itemIndex) => this.setState({type: itemValue})}
+                                style={{
+                                    backgroundColor : 'transparent',
+                                    borderWidth : responsiveWidth(3),
+                                    borderColor : 'black',
+                                    width : responsiveWidth(50),
+                                    height : responsiveHeight(7),
+                                    alignItems : 'center',
+                                    marginBottom : responsiveHeight(2)
+                                }}
+                            >
+                                <Picker.Item label="Food" value="Food" />
+                                <Picker.Item label="Needs" value="Needs" />
+                                <Picker.Item label="Hobby" value="Hobby" />
+                                <Picker.Item label="Investation" value="Investation" />
+                            </Picker>
+                            <TextInput
+                                value = {this.state.text1}
+                                placeholder = "Stuff..."
+                                onChangeText = {(value) => this.setState({text1 : value})}
+                                style={styles.modalInput}
+                                underlineColorAndroid = "transparent"
+                                autoCapitalize = "words"
+                            />
+                            <TextInput
+                                value = {this.state.text2}
+                                placeholder = "Price..."
+                                onChangeText = {(value) => this.setState({text2 : value})}
+                                style={styles.modalInput}
+                                underlineColorAndroid = "transparent"
+                                keyboardType = "numeric"
+                            />
+                            <TextInput
+                                value = {this.state.text3}
+                                placeholder = "Count..."
+                                onChangeText = {(value) => this.setState({text3 : value})}
+                                style={styles.modalInput}
+                                underlineColorAndroid = "transparent"
+                                keyboardType = "numeric"
+                            />
+                            <View
+                                style = {{
+                                    flexDirection : 'row',
+                                    marginTop : responsiveHeight(3)
+                                }}
+                            >
+                                <TouchableHighlight
+                                    onPress={() => {
+                                        if ((this.state.text1 != "" && this.state.text2 != "") && this.state.text3 != "") {
+                                            let x = parseInt(this.state.text2)*parseInt(this.state.text3)
+                                            let y = parseInt(this.state.text2_old)*parseInt(this.state.text3_old)
+                                            let z = x-y
+                                            z = this.state.balance - z
+                                            this.itemsRef.child(this.state.itemKey).update({
+                                                Stuff : this.state.text1,
+                                                Price : parseInt(this.state.text2),
+                                                Count : parseInt(this.state.text3),
+                                                Type : this.state.type
+                                            })
+                                            var balanceKey = this.getRef().child('Balance').key
+                                            this.getRef().child('Balance').update({
+                                                value : z
+                                            })
+                                            this.setModalVisible2(!this.state.modalVisible2)
+                                        } else {
+                                            alert("Error : Incomplete text field.\nPlease fill all the textfield before enter.")
+                                        }
+                                        this.setState({
+                                            text1 : "", 
+                                            text2 : "", 
+                                            text3 : "",
+                                            type : "Food"
+                                        })
+                                    }}
+                                    style = {styles.modalButton1}
+                                >
+                                    <Text style={styles.modButtonText}>Edit</Text>
+                                </TouchableHighlight>
+                                <TouchableHighlight
+                                    onLongPress = {() => {
+                                        let x = this.state.text2_old * this.state.text3_old;
+                                        x = this.state.balance + x
+                                        this.getRef().child('Balance').update({
+                                            value : x
+                                        })
+                                        this.itemsRef.child(this.state.itemKey).remove()
+                                        this.setModalVisible2(!this.state.modalVisible2)
+                                    }}
+                                    style = {styles.modalButton2}
+                                >
+                                    <Text style={styles.modButtonText}>Delete</Text>
+                                </TouchableHighlight>
+                                <TouchableHighlight
+                                    onPress={() => {
+                                        this.setModalVisible2(!this.state.modalVisible2)
+                                        this.setState({
+                                            text1 : "", 
+                                            text2 : "", 
+                                            text3 : "",
+                                            type : "Food"
+                                        })
+                                    }}
+                                    style = {styles.modalButton2}
+                                >
+                                    <Text style={styles.modButtonText}>Cancel</Text>
+                                </TouchableHighlight>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+                <View
+                    style = {{flexDirection : 'row'}}
+                >
+                    <TouchableOpacity
+                        style = {styles.selectedHeaderTab}
+                    >
+                        <Image source={require('../../images/outcome.png')} style = {styles.tabIcons} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style = {styles.headerTab}
+                        onPress = {this.Income}
+                    >
+                        <Image source={require('../../images/income.png')} style = {styles.tabIcons} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style = {styles.headerTab}
+                        onPress = {this.Profile}
+                    >
+                        <Image source={require('../../images/profile.png')} style = {styles.tabIcons} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style = {styles.headerTab}
+                        onPress = {Actions.stats()}
+                    >
+                        <Image source={require('../../images/chart.png')} style = {styles.tabIcons} />
+                    </TouchableOpacity>
+                </View>
+                <DatePicker
+                    style={{width: 200}}
+                    date={this.state.date}
+                    mode="date"
+                    placeholder="select date"
+                    format="DD/MM/YYYY"
+                    minDate="01/05/1997"
+                    maxDate={this.getTimes()}
+                    confirmBtnText="Confirm"
+                    cancelBtnText="Cancel"
+                    customStyles={{
+                    dateIcon: {
+                        position: 'absolute',
+                        left: 0,
+                        top: 4,
+                        marginLeft: 0
+                    },
+                    dateInput: {
+                        marginLeft: 36
+                    }
+                    // ... You can check the source to find the other keys. 
+                    }}
+                    onDateChange={(date) => {
+                        this.setState({date: date})
+                        this.getItems(this.itemsRef)
+                    }}
+                />
                 <View style={{
                     flexDirection : 'row',
                     height : responsiveHeight(4),
@@ -326,14 +527,21 @@ const styles = StyleSheet.create ({
         width : width,
     },
     header : {
-        marginVertical : responsiveHeight(2),
-        fontSize : responsiveFontSize(3),
+        fontSize : responsiveFontSize(2),
+    },
+    selectedHeaderTab : {
+        height : responsiveHeight(10),
+        width : responsiveWidth(25),
+        alignItems : 'center',
+        backgroundColor : '#2a6aff',
+        justifyContent : 'center',
     },
     headerTab : {
         height : responsiveHeight(10),
-        width : responsiveWidth(100),
+        width : responsiveWidth(25),
         alignItems : 'center',
-        backgroundColor : '#00f',
+        backgroundColor : '#fff',
+        justifyContent : 'center',
     },
     tupple : {
         width : responsiveWidth(31.6),
@@ -360,20 +568,20 @@ const styles = StyleSheet.create ({
         fontSize : responsiveFontSize(2.4),
     },
     liContainer : {
-        height : responsiveHeight(70),
+        height : responsiveHeight(62),
     },
     action : {
         backgroundColor : 'green',
         borderColor : 'transparent',
         borderWidth : 1,
-        paddingVertical : 16,
         width : responsiveWidth(100),
-        height : responsiveHeight(10),
+        height : responsiveHeight(8),
         alignItems : 'center',
+        justifyContent : 'center',
     },
     actionText : {
         color : '#fff',
-        fontSize : 16,
+        fontSize : responsiveFontSize(2.5),
         textAlign : 'center',
     },
     modal : {
@@ -395,7 +603,7 @@ const styles = StyleSheet.create ({
         alignItems : 'center',
         justifyContent : 'center',
         backgroundColor : 'green',
-        marginHorizontal : responsiveWidth(3),
+        marginHorizontal : responsiveWidth(1.5),
     },
     modalButton2 : {
         width : responsiveWidth(20),
@@ -403,14 +611,15 @@ const styles = StyleSheet.create ({
         alignItems : 'center',
         justifyContent : 'center',
         backgroundColor : 'red',
+        marginHorizontal : responsiveWidth(1.5),
     },
     modButtonText : {
         fontSize : responsiveFontSize(2),
         color : '#fff',
     },
+    tabIcons : {
+        width : responsiveWidth(13),
+        height : responsiveHeight(8),
+    },
 });
-const drawerStyles = {
-    drawer: { shadowColor: '#000000', shadowOpacity: 0.8, shadowRadius: 3},
-    main: {paddingLeft: 3},
-}
 AppRegistry.registerComponent('outcomePage', () => outcomePage);
