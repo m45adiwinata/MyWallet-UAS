@@ -26,7 +26,7 @@ export default class Routes extends Component<{}> {
                     <Scene key="income" component={incomePage} title="income" hideNavBar={true}/>
                     <Scene key="profile" component={profile} title="profile" hideNavBar={true} />
                     <Scene key="chart" component={chart} title="chart" hideNavBar={true} />
-                    <Scene key="chart2" component={char2} title="chart2" hideNavBar={true} />
+                    <Scene key="chart2" component={chart2} title="chart2" hideNavBar={true} />
                     <Scene key="stats" component={stats} title="stats" hideNavBar={true} />
                 </Stack>
             </Router>

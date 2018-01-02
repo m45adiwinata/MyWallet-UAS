@@ -86,11 +86,13 @@ export default class outcomePage extends Component <{}> {
     componentWillMount() {
         this.getBalance();
         this.getItems(this.itemsRef);
+        this.getRef().child('Incomes').on('value',(snap) => {});
     }
     
     componentDidMount() {
         this.getBalance();
         this.getItems(this.itemsRef);
+        this.getRef().child('Incomes').on('value',(snap) => {});
     }
     getItems(itemsRef) {
         itemsRef.on('value',(snap) => {
@@ -156,12 +158,20 @@ export default class outcomePage extends Component <{}> {
     Profile() {
         Actions.profile();
     }
-    Chart() {
-        Actions.chart();
+    Stats() {
+        Actions.stats();
     }
     getTimes() {
         let today = new Date();
         var time = today.getDate() + "/" + (today.getMonth()+1) + "/" + today.getFullYear();
+        return time;
+    }
+    getMonth() {
+        var time = new Date().getMonth()+1;
+        return time;
+    }
+    getYear() {
+        var time = new Date().getFullYear();
         return time;
     }
     render() {
@@ -244,7 +254,9 @@ export default class outcomePage extends Component <{}> {
                                                 Price : parseInt(this.state.text2), 
                                                 Count : parseInt(this.state.text3),
                                                 Type : this.state.type,
-                                                Time : this.getTimes()
+                                                Time : this.getTimes(),
+                                                Month : this.getMonth(),
+                                                Year : this.getYear()
                                             })
                                             let x = this.state.balance - (parseInt(this.state.text2)*parseInt(this.state.text3))
                                             var balanceKey = this.getRef().child('Balance').key
@@ -446,7 +458,7 @@ export default class outcomePage extends Component <{}> {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style = {styles.headerTab}
-                        onPress = {Actions.stats()}
+                        onPress = {this.Stats}
                     >
                         <Image source={require('../../images/chart.png')} style = {styles.tabIcons} />
                     </TouchableOpacity>

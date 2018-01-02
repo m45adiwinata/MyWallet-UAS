@@ -25,6 +25,7 @@ export default class chartPage extends Component<{}> {
     constructor() {
         var userId = firebase.auth().currentUser.uid;
         super();
+        let ds = new ListView.DataSource({rowHasChanged : (r1,r2) => r1 !== r2});
         this.state = {
             Food : 0,
             Needs : 0,
@@ -36,8 +37,12 @@ export default class chartPage extends Component<{}> {
             length3 : 0,
             length4 : 0,
             modalVisible : false,
-            userId : userId
+            itemModal : false,
+            userId : userId,
+            itemDataSource : ds,
+            year : new Date().getFullYear().toString()
         }
+        this.renderRow = this.renderRow.bind(this);
         this.itemsRef = this.getRef().child('Items');
         this.month = 0;
     }
@@ -50,26 +55,28 @@ export default class chartPage extends Component<{}> {
         if(this.month == 0) {
             this.itemsRef.on('value', (snap) => {
                 snap.forEach((child) => {
-                    if(child.val().Type == "Food") {
-                        F += child.val().Price * child.val().Count;
+                    if(child.val().Year == parseInt(this.state.year)) {
+                        if(child.val().Type == "Food") {
+                            F += child.val().Price * child.val().Count;
+                        }
+                        else if(child.val().Type == "Needs") {
+                            N += child.val().Price * child.val().Count;
+                        }
+                        else if(child.val().Type == "Hobby") {
+                            H += child.val().Price * child.val().Count;
+                        }
+                        else if(child.val().Type == "Investation") {
+                            I += child.val().Price * child.val().Count;
+                        }
+                        Total += child.val().Price * child.val().Count;
                     }
-                    else if(child.val().Type == "Needs") {
-                        N += child.val().Price * child.val().Count;
-                    }
-                    else if(child.val().Type == "Hobby") {
-                        H += child.val().Price * child.val().Count;
-                    }
-                    else if(child.val().Type == "Investation") {
-                        I += child.val().Price * child.val().Count;
-                    }
-                    Total += child.val().Price * child.val().Count;
                 });
             });
         }
         else {
             this.itemsRef.on('value', (snap) => {
                 snap.forEach((child) => {
-                    if(this.month == child.val().Month) {
+                    if(this.month == child.val().Month && parseInt(this.state.year) == child.val().Year) {
                         if(child.val().Type == "Food") {
                             F += child.val().Price * child.val().Count;
                         }
@@ -106,6 +113,49 @@ export default class chartPage extends Component<{}> {
             length3 : H,
             length4 : I
         });
+    }
+    getItemByType(type,month,year) {
+        this.itemsRef.on('value', (snap) => {
+            let items = [];
+            if(month == 0) {
+                snap.forEach((child) => {
+                    if(child.val().Type == type && child.val().Year == year) {
+                        items.push({
+                            name : child.val().Stuff,
+                            price : child.val().Price,
+                            count : child.val().Count
+                        });
+                    }
+                });
+            }
+            else {
+                snap.forEach((child) => {
+                    if(child.val().Type == type && child.val().Month == month && child.val().Year == year) {
+                        items.push({
+                            name : child.val().Stuff,
+                            price : child.val().Price,
+                            count : child.val().Count
+                        });
+                    }
+                });
+            }
+            this.setState({
+                itemDataSource : this.state.itemDataSource.cloneWithRows(items)
+            });
+        });
+    }
+    renderRow(item) {
+        return(
+            <View style={{marginVertical : responsiveHeight(2)}}>
+                <Text>{item.name}</Text>
+                <Text>{item.price}</Text>
+                <Text>{item.count}</Text>
+            </View>
+        );
+    }
+    setItemModalVisibility(visible) {
+        this.clearModal;
+        this.setState({itemModal : visible});
     }
     componentWillMount() {
         this.getChartValue();
@@ -169,6 +219,48 @@ export default class chartPage extends Component<{}> {
                         </View>
                     </View>
                 </Modal>
+
+
+                <Modal
+                    animationType={"slide"}
+                    transparent={true}
+                    visible={this.state.itemModal}
+                    onRequestClose={() => {}}
+                >
+                    <View
+                        style = {{
+                            alignItems : 'center',
+                            backgroundColor : '#fff',
+                            borderWidth : 3,
+                            borderRadius : 10,
+                            marginTop : responsiveHeight(15),
+                            height : responsiveHeight(70),
+                            width : responsiveWidth(80),
+                            marginHorizontal : responsiveWidth(10)
+                        }}
+                    >
+                        <View
+                            style={styles.itemModal}
+                        >
+                            <View
+                                style = {{height : responsiveHeight(55),width: responsiveWidth(50)}}
+                            >
+                                <ListView 
+                                    dataSource = {this.state.itemDataSource}
+                                    renderRow = {this.renderRow}
+                                />
+                            </View>
+                            <TouchableHighlight
+                                style = {styles.modalButton1}
+                                onPress = {() => {
+                                    this.setItemModalVisibility(!this.state.itemModal)
+                                }}
+                            >
+                                <Text style={{color : '#000'}}>Close</Text>
+                            </TouchableHighlight>
+                        </View>
+                    </View>
+                </Modal>
                 <View
                     style = {{flexDirection : 'row'}}
                 >
@@ -187,92 +279,146 @@ export default class chartPage extends Component<{}> {
                         }}>Your Outcome Stats</Text>
                     </View>
                 </View>
-                
-                <Picker
-                    selectedValue={this.month.toString()}
-                    onValueChange={(itemValue, itemIndex) => {
-                        this.month = parseInt(itemValue)
-                        this.getChartValue()
-                    }}
-                    style={{
-                        backgroundColor : 'transparent',
-                        borderWidth : 1,
-                        borderColor : 'black',
-                        width : responsiveWidth(36),
-                        height : responsiveHeight(7),
-                        alignItems : 'center',
-                        marginBottom : responsiveHeight(2)
-                    }}
-                >
-                    <Picker.Item label="All Months" value="0" />
-                    <Picker.Item label="January" value="1" />
-                    <Picker.Item label="February" value="2" />
-                    <Picker.Item label="March" value="3" />
-                    <Picker.Item label="April" value="4" />
-                    <Picker.Item label="May" value="5" />
-                    <Picker.Item label="June" value="6" />
-                    <Picker.Item label="July" value="7" />
-                    <Picker.Item label="August" value="8" />
-                    <Picker.Item label="September" value="9" />
-                    <Picker.Item label="October" value="10" />
-                    <Picker.Item label="November" value="11" />
-                    <Picker.Item label="December" value="12" />
-                </Picker>
+                <View style={{flexDirection : 'row'}}>
+                    <Picker
+                        selectedValue={this.month.toString()}
+                        onValueChange={(itemValue, itemIndex) => {
+                            this.month = parseInt(itemValue)
+                            this.getChartValue()
+                        }}
+                        style={{
+                            backgroundColor : 'transparent',
+                            borderWidth : 1,
+                            borderColor : 'black',
+                            width : responsiveWidth(36),
+                            height : responsiveHeight(7),
+                            alignItems : 'center',
+                            marginBottom : responsiveHeight(2)
+                        }}
+                    >
+                        <Picker.Item label="All Months" value="0" />
+                        <Picker.Item label="January" value="1" />
+                        <Picker.Item label="February" value="2" />
+                        <Picker.Item label="March" value="3" />
+                        <Picker.Item label="April" value="4" />
+                        <Picker.Item label="May" value="5" />
+                        <Picker.Item label="June" value="6" />
+                        <Picker.Item label="July" value="7" />
+                        <Picker.Item label="August" value="8" />
+                        <Picker.Item label="September" value="9" />
+                        <Picker.Item label="October" value="10" />
+                        <Picker.Item label="November" value="11" />
+                        <Picker.Item label="December" value="12" />
+                    </Picker>
+                    <TextInput
+                        style = {{
+                            width : responsiveWidth(14),
+                            height : responsiveHeight(8),
+                            fontSize : responsiveFontSize(2.4),
+                        }}
+                        onChangeText = {(value) => {
+                            this.setState({year : value})
+                        }}
+                        onEndEditing = {() => {
+                            if (this.state.year == "") {
+                                this.state.year = new Date().getFullYear()
+                            }
+                            this.getChartValue()
+                        }}
+                        onSubmitEditing = {() => {
+                            if (this.state.year == "") {
+                                this.state.year = new Date().getFullYear()
+                            }
+                            this.getChartValue()
+                        }}
+                        underlineColorAndroid = "transparent"
+                        value = {this.state.year}
+                        keyboardType = "numeric"
+                    />
+                </View>
                 <View
                     style = {styles.chartBoard}
                 >
                     <Text style={{fontSize : responsiveFontSize(2.5), color : 'red'}}>
                         Food : {(this.state.length1*100/80).toFixed(2)}%
                     </Text>
-                    <View
-                        style = {{
-                            backgroundColor : 'red',
-                            width : responsiveWidth(this.state.length1),
-                            height : responsiveHeight(6),
-                            marginTop : responsiveHeight(2),
-                            marginBottom : responsiveHeight(4)
+                    <TouchableOpacity
+                        onPress = {() => {
+                            this.getItemByType("Food", this.month, this.state.year)
+                            this.setItemModalVisibility(true);
                         }}
                     >
-                    </View>
+                        <View
+                            style = {{
+                                backgroundColor : 'red',
+                                width : responsiveWidth(this.state.length1),
+                                height : responsiveHeight(6),
+                                marginTop : responsiveHeight(2),
+                                marginBottom : responsiveHeight(4)
+                            }}
+                        >
+                        </View>
+                    </TouchableOpacity>
                     <Text style={{fontSize : responsiveFontSize(2.5), color : '#ffd700'}}>
                         Needs : {(this.state.length2*100/80).toFixed(2)}%
                     </Text>
-                    <View
-                        style = {{
-                            backgroundColor : '#ffd700',
-                            width : responsiveWidth(this.state.length2),
-                            height : responsiveHeight(6),
-                            marginTop : responsiveHeight(2),
-                            marginBottom : responsiveHeight(4)
+                    <TouchableOpacity
+                        onPress = {() => {
+                            this.getItemByType("Needs", this.month, this.state.year)
+                            this.setItemModalVisibility(true);
                         }}
                     >
-                    </View>
+                        <View
+                            style = {{
+                                backgroundColor : '#ffd700',
+                                width : responsiveWidth(this.state.length2),
+                                height : responsiveHeight(6),
+                                marginTop : responsiveHeight(2),
+                                marginBottom : responsiveHeight(4)
+                            }}
+                        >
+                        </View>
+                    </TouchableOpacity>
                     <Text style={{fontSize : responsiveFontSize(2.5), color : 'green'}}>
                         Hobby : {(this.state.length3*100/80).toFixed(2)}%
                     </Text>
-                    <View
-                        style = {{
-                            backgroundColor : 'green',
-                            width : responsiveWidth(this.state.length3),
-                            height : responsiveHeight(6),
-                            marginTop : responsiveHeight(2),
-                            marginBottom : responsiveHeight(4)
+                    <TouchableOpacity
+                        onPress = {() => {
+                            this.getItemByType("Hobby", this.month, this.state.year)
+                            this.setItemModalVisibility(true);
                         }}
                     >
-                    </View>
+                        <View
+                            style = {{
+                                backgroundColor : 'green',
+                                width : responsiveWidth(this.state.length3),
+                                height : responsiveHeight(6),
+                                marginTop : responsiveHeight(2),
+                                marginBottom : responsiveHeight(4)
+                            }}
+                        >
+                        </View>
+                    </TouchableOpacity>
                     <Text style={{fontSize : responsiveFontSize(2.5), color : 'blue'}}>
                         Investation : {(this.state.length4*100/80).toFixed(2)}%
                     </Text>
-                    <View
-                        style = {{
-                            backgroundColor : 'blue',
-                            width : responsiveWidth(this.state.length4),
-                            height : responsiveHeight(6),
-                            marginTop : responsiveHeight(2),
-                            marginBottom : responsiveHeight(4)
+                    <TouchableOpacity
+                        onPress = {() => {
+                            this.getItemByType("Investation", this.month, this.state.year)
+                            this.setItemModalVisibility(true);
                         }}
                     >
-                    </View>
+                        <View
+                            style = {{
+                                backgroundColor : 'blue',
+                                width : responsiveWidth(this.state.length4),
+                                height : responsiveHeight(6),
+                                marginTop : responsiveHeight(2),
+                                marginBottom : responsiveHeight(4)
+                            }}
+                        >
+                        </View>
+                    </TouchableOpacity>
                 </View>
                 <TouchableHighlight
                     style = {styles.openModalBtn}
@@ -320,6 +466,12 @@ const styles = StyleSheet.create ({
     modal : {
         height : responsiveHeight(40),
         width : responsiveWidth(60),
+        justifyContent : 'center',
+        alignItems : 'center',
+    },
+    itemModal : {
+        height : responsiveHeight(70),
+        width : responsiveWidth(70),
         justifyContent : 'center',
         alignItems : 'center',
     },

@@ -31,9 +31,10 @@ export default class Stats extends Component<{}> {
             Total : 0,
             length1 : 0,
             length2 : 0,
-            month : this.getMonth(),
+            // month : this.getMonth(),
             modalVisible : false,
             userId : userId,
+            year : new Date().getFullYear().toString()
         }
         this.itemsRef = this.getRef().child('Items');
         this.incomeRef = this.getRef().child('Incomes');
@@ -47,7 +48,7 @@ export default class Stats extends Component<{}> {
         if(this.month != 0) {
             this.incomeRef.on('value', (snap) => {
                 snap.forEach((child) => {
-                    if(child.val().Month == this.month) {
+                    if(child.val().Month == this.month && child.val().Year == parseInt(this.state.year)) {
                         I += child.val().Amount;
                     }
                 });
@@ -56,7 +57,9 @@ export default class Stats extends Component<{}> {
         else {
             this.incomeRef.on('value', (snap) => {
                 snap.forEach((child) => {
-                    I += child.val().Amount;
+                    if(child.val().Year == parseInt(this.state.year)) {
+                        I += child.val().Amount;
+                    }
                 });
             });
         }
@@ -67,7 +70,7 @@ export default class Stats extends Component<{}> {
         if(this.month != 0) {
             this.itemsRef.on('value', (snap) => {
                 snap.forEach((child) => {
-                    if(child.val().Month == this.month) {
+                    if(child.val().Month == this.month && child.val().Year == parseInt(this.state.year)) {
                         O += child.val().Price * child.val().Count;
                     }
                 });
@@ -76,7 +79,9 @@ export default class Stats extends Component<{}> {
         else {
             this.itemsRef.on('value', (snap) => {
                 snap.forEach((child) => {
-                    O += child.val().Price * child.val().Count;
+                    if(child.val().Year == parseInt(this.state.year)) {
+                        O += child.val().Price * child.val().Count;
+                    }
                 });
             });
         }
@@ -191,6 +196,27 @@ export default class Stats extends Component<{}> {
                     <Picker.Item label="November" value="11" />
                     <Picker.Item label="December" value="12" />
                 </Picker>
+                <TextInput 
+                    value = {this.state.year}
+                    onChangeText = {(value) => {this.setState({year : value})}}
+                    style = {{
+                        width : responsiveWidth(14),
+                        height: responsiveHeight(8),
+                        fontSize:responsiveFontSize(2.4),
+                    }}
+                    onEndEditing = {() => {
+                        if(this.state.year == "") {
+                            this.setState({year : new Date().getFullYear().toString()})
+                        }
+                    }}
+                    onSubmitEditing = {() => {
+                        if(this.state.year == "") {
+                            this.setState({year : new Date().getFullYear().toString()})
+                        }
+                    }}
+                    underlineColorAndroid = "transparent"
+                    keyboardType = "numeric"
+                />
                 <View
                     style = {styles.chartBoard}
                 >

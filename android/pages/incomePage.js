@@ -19,12 +19,6 @@ import {
     responsiveWidth,
     responsiveFontSize
 } from 'react-native-responsive-dimensions';
-import {
-    Tabs,
-    Tab,
-    TabHeading,
-    Icon
-} from 'native-base';
 import { Actions } from 'react-native-router-flux';
 import DatePicker from 'react-native-datepicker';
 
@@ -177,6 +171,9 @@ export default class incomePage extends Component<{}> {
         let today = new Date();
         var time = today.getFullYear();
         return time;
+    }
+    goToStats() {
+        Actions.stats();
     }
     render (){
         return (
@@ -382,7 +379,7 @@ export default class incomePage extends Component<{}> {
                 </TouchableOpacity>
                 <TouchableOpacity
                     style = {styles.headerTab}
-                    onPress = {Actions.stats()}
+                    onPress = {this.goToStats}
                 >
                     <Image source={require('../../images/chart.png')} style = {styles.tabIcons} />
                 </TouchableOpacity>
@@ -490,10 +487,10 @@ export default class incomePage extends Component<{}> {
                 </View>
             </View>
             <View style = {styles.liContainer}>
-            <ListView
-                dataSource = {this.state.itemDataSource}
-                renderRow = {this.renderRow}
-            />
+                <ListView
+                    dataSource = {this.state.itemDataSource}
+                    renderRow = {this.renderRow}
+                />
             </View>
             <View style={{flexDirection:'row'}}>
                 <Text>Your Balance : </Text>
