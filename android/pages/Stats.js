@@ -166,57 +166,61 @@ export default class Stats extends Component<{}> {
                     color : '#00f',
                     marginVertical : responsiveHeight(2)
                 }}>Your Stats For Month</Text>
-                <Picker
-                    selectedValue={this.month.toString()}
-                    onValueChange={(itemValue, itemIndex) => {
-                        this.month = parseInt(itemValue)
-                        this.getChartValue()
-                    }}
-                    style={{
-                        backgroundColor : 'transparent',
-                        borderWidth : 1,
-                        borderColor : 'black',
-                        width : responsiveWidth(36),
-                        height : responsiveHeight(7),
-                        alignItems : 'center',
-                        marginBottom : responsiveHeight(2)
-                    }}
-                >
-                    <Picker.Item label="All Months" value="0" />
-                    <Picker.Item label="January" value="1" />
-                    <Picker.Item label="February" value="2" />
-                    <Picker.Item label="March" value="3" />
-                    <Picker.Item label="April" value="4" />
-                    <Picker.Item label="May" value="5" />
-                    <Picker.Item label="June" value="6" />
-                    <Picker.Item label="July" value="7" />
-                    <Picker.Item label="August" value="8" />
-                    <Picker.Item label="September" value="9" />
-                    <Picker.Item label="October" value="10" />
-                    <Picker.Item label="November" value="11" />
-                    <Picker.Item label="December" value="12" />
-                </Picker>
-                <TextInput 
-                    value = {this.state.year}
-                    onChangeText = {(value) => {this.setState({year : value})}}
-                    style = {{
-                        width : responsiveWidth(14),
-                        height: responsiveHeight(8),
-                        fontSize:responsiveFontSize(2.4),
-                    }}
-                    onEndEditing = {() => {
-                        if(this.state.year == "") {
-                            this.setState({year : new Date().getFullYear().toString()})
-                        }
-                    }}
-                    onSubmitEditing = {() => {
-                        if(this.state.year == "") {
-                            this.setState({year : new Date().getFullYear().toString()})
-                        }
-                    }}
-                    underlineColorAndroid = "transparent"
-                    keyboardType = "numeric"
-                />
+                <View style={{flexDirection:'row'}}>
+                    <Picker
+                        selectedValue={this.month.toString()}
+                        onValueChange={(itemValue, itemIndex) => {
+                            this.month = parseInt(itemValue)
+                            this.getChartValue()
+                        }}
+                        style={{
+                            backgroundColor : 'transparent',
+                            borderWidth : 1,
+                            borderColor : 'black',
+                            width : responsiveWidth(36),
+                            height : responsiveHeight(7),
+                            alignItems : 'center',
+                            marginBottom : responsiveHeight(2)
+                        }}
+                    >
+                        <Picker.Item label="All Months" value="0" />
+                        <Picker.Item label="January" value="1" />
+                        <Picker.Item label="February" value="2" />
+                        <Picker.Item label="March" value="3" />
+                        <Picker.Item label="April" value="4" />
+                        <Picker.Item label="May" value="5" />
+                        <Picker.Item label="June" value="6" />
+                        <Picker.Item label="July" value="7" />
+                        <Picker.Item label="August" value="8" />
+                        <Picker.Item label="September" value="9" />
+                        <Picker.Item label="October" value="10" />
+                        <Picker.Item label="November" value="11" />
+                        <Picker.Item label="December" value="12" />
+                    </Picker>
+                    <TextInput 
+                        value = {this.state.year}
+                        onChangeText = {(value) => {this.setState({year : value})}}
+                        style = {{
+                            width : responsiveWidth(14),
+                            height: responsiveHeight(8),
+                            fontSize:responsiveFontSize(2.4),
+                        }}
+                        onEndEditing = {() => {
+                            if(this.state.year == "") {
+                                this.setState({year : new Date().getFullYear().toString()})
+                            }
+                            this.getChartValue()
+                        }}
+                        onSubmitEditing = {() => {
+                            if(this.state.year == "") {
+                                this.setState({year : new Date().getFullYear().toString()})
+                            }
+                            this.getChartValue()
+                        }}
+                        underlineColorAndroid = "transparent"
+                        keyboardType = "numeric"
+                    />
+                </View>
                 <View
                     style = {styles.chartBoard}
                 >
